@@ -22,7 +22,7 @@ class UserData {
     };
   }
 
-  factory UserData.fromJson(Map<String, dynamic> json) {
+  factory UserData.fromJson(dynamic json) {
     return UserData(
       id: json["id"],
       contact: json["contact"],

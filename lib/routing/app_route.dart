@@ -2,10 +2,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
 import 'package:grocery_app_user/model/category.dart';
+import 'package:grocery_app_user/model/item.dart';
+import 'package:grocery_app_user/model/user_data.dart';
 import 'package:grocery_app_user/views/dashboard/dashboard_view.dart';
 import 'package:grocery_app_user/views/dashboard/search/search_view.dart';
 import 'package:grocery_app_user/views/intro/intro_view.dart';
+import 'package:grocery_app_user/views/item_detail/item_detail_view.dart';
 import 'package:grocery_app_user/views/itemlist/itemlist_view.dart';
+import 'package:grocery_app_user/views/profile_update/profile_update_view.dart';
 import 'package:grocery_app_user/views/sign_in/sign_in_view.dart';
 import 'package:grocery_app_user/views/user_detail/user_detail_view.dart';
 import 'package:grocery_app_user/views/verification/verification_view.dart';
@@ -65,6 +69,22 @@ class AppRoute {
 
         return MaterialPageRoute(
           builder: (context) => SearchView(),
+        );
+
+      case AppConstant.itemView:
+
+        Item item = settings.arguments as Item;
+
+        return MaterialPageRoute(
+          builder: (context) => ItemDetailView(item: item,),
+        );
+
+      case AppConstant.profileUpdateView:
+
+        UserData user = settings.arguments as UserData;
+
+        return MaterialPageRoute(
+          builder: (context) => ProfileUpdateView(user),
         );
 
       default:

@@ -10,7 +10,7 @@ class AppConstant{
   static const dashboardView = 'dashboard';
   static const searchView = 'search';
   static const itemView = 'item';
-  static const userView = 'user';
+  static const profileUpdateView = 'profile';
   static const userListView = 'user';
   static const orderView = 'order';
 

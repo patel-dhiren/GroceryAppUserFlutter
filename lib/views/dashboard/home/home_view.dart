@@ -13,6 +13,13 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,10 +71,10 @@ class _HomeViewState extends State<HomeView> {
           enabled: false,
           decoration: InputDecoration(
               hintText: "Search for products",
-
               prefixIcon: Icon(Icons.search),
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 25, vertical: 13)),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 25, vertical: 13)),
         ),
       ),
     );
@@ -115,7 +122,8 @@ class _HomeViewState extends State<HomeView> {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          Navigator.pushNamed(context, AppConstant.itemListView, arguments: categories[index]);
+                          Navigator.pushNamed(context, AppConstant.itemListView,
+                              arguments: categories[index]);
                         },
                         child: CircleAvatar(
                           radius: 50,
@@ -142,7 +150,6 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildTopProductsGridView() {
-
     return StreamBuilder<List<Item>>(
       stream: FirebaseService().itemsStream,
       builder: (context, snapshot) {
@@ -226,76 +233,103 @@ class _HomeViewState extends State<HomeView> {
                 crossAxisSpacing: 8,
                 childAspectRatio: 1 / 1.5),
             itemBuilder: (context, index) {
-              return Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    side: BorderSide(color: Colors.grey.shade300, width: 1)),
-                color: Colors.grey.shade100,
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  child: GridTile(
-                    child: Container(
-                        alignment: Alignment.center,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Align(
-                              alignment: Alignment.center,
-                              child: Image.network(
-                                itemList[index].imageUrl,
-                                height: 100,
-                                width: 100,
-                              ),
-                            ),
-                            Text(
-                              itemList[index].name,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              '${itemList[index].price} /${itemList[index].unit}',
-                              style:
-                                  TextStyle(color: Colors.grey, fontSize: 12),
-                            ),
-                            SizedBox(
-                              height: 8,
-                            ),
-                            Row(
+              return FutureBuilder(future: FirebaseService().getFavorite(itemList[index].id!), builder: (context, snapshot) {
+                var isFavorite = snapshot.hasData && snapshot.data!;
+
+                FirebaseService().updateFavorites(isFavorite, itemList[index].id!);
+
+                return Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      side: BorderSide(color: Colors.grey.shade300, width: 1)),
+                  color: Colors.grey.shade100,
+                  child: Padding(
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    child: GridTile(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.pushNamed(context, AppConstant.itemView, arguments: itemList[index]);
+                        },
+                        child: Container(
+                            alignment: Alignment.center,
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    'Rs. ${itemList[index].price}',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                Align(
+                                  alignment: Alignment.center,
+                                  child: Image.network(
+                                    itemList[index].imageUrl,
+                                    height: 100,
+                                    width: 100,
                                   ),
                                 ),
-                                Icon(
-                                  Icons.favorite_border,
-                                  color: Colors.grey,
+                                Text(
+                                  itemList[index].name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '${itemList[index].price} /${itemList[index].unit}',
+                                  style:
+                                  TextStyle(color: Colors.grey, fontSize: 12),
+                                ),
+                                SizedBox(
+                                  height: 8,
+                                ),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Rs. ${itemList[index].price}',
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    ValueListenableBuilder<bool>(
+                                      valueListenable: FirebaseService().getFavoriteNotifier(itemList[index].id!),
+                                      builder: (context, isFavorite, _) {
+
+                                        return InkWell(
+                                          onTap: () {
+                                            FirebaseService().toggleFavorite(itemList[index].id!);
+                                          },
+                                          child: Icon(
+                                            isFavorite
+                                                ? Icons.favorite
+                                                : Icons.favorite_border,
+                                            color: Colors.red,
+                                          ),
+                                        );
+                                      },
+                                    ),
+
+                                  ],
                                 )
                               ],
-                            )
-                          ],
-                        )),
+                            )),
+                      ),
+                    ),
                   ),
-                ),
-              );
+                );
+              },);
             },
           );
         } else {
           return Container();
         }
       },
+
+
     );
   }
 }

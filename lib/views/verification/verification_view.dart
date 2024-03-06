@@ -22,9 +22,16 @@ class _VerificationViewState extends State<VerificationView> {
   void _signInWithPhoneNumber() async {
     FirebaseService().signInWithPhoneNumber(
       _codeController.text.trim(),
-      (UserCredential userCredential) {
+      (UserCredential userCredential) async {
 
-        Navigator.pushReplacementNamed(context, AppConstant.userDetailView, arguments: userCredential);
+        await FirebaseService().checkIfUserExists(userCredential.user!.uid).then((result) {
+          if(!result){
+            Navigator.pushReplacementNamed(context, AppConstant.userDetailView, arguments: userCredential);
+          }else{
+            Navigator.pushReplacementNamed(context, AppConstant.dashboardView);
+          }
+        });
+
       },
       (String message) {
         // On failure, show the error message
@@ -72,10 +79,11 @@ class _VerificationViewState extends State<VerificationView> {
                           fieldHeight: 50,
                           fieldWidth: 40,
                           activeFillColor: Colors.white,
+                          inactiveFillColor: Colors.grey.shade300,
+                          inactiveColor: Colors.grey,
+                          activeColor: Colors.green.shade400
                         ),
                         animationDuration: Duration(milliseconds: 300),
-                        backgroundColor: Colors.blue.shade50,
-                        enableActiveFill: true,
                         controller: _codeController,
                         onCompleted: (v) {
                           _signInWithPhoneNumber();
