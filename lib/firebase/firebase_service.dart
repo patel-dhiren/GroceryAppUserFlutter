@@ -2,10 +2,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:grocery_app_user/model/order_data.dart';
 
+import '../model/address.dart';
 import '../model/cart.dart';
 import '../model/category.dart';
 import '../model/item.dart';
+import '../model/order.dart';
 import '../model/user_data.dart';
 
 class FirebaseService {
@@ -251,23 +254,24 @@ class FirebaseService {
   }
 
   Future<void> addToCart(Item item, int quantity) async {
-
     var userId = _auth.currentUser!.uid;
 
-    DatabaseReference cartRef = _database.ref().child('userCarts/$userId/items/${item.id}');
+    DatabaseReference cartRef =
+        _database.ref().child('userCarts/$userId/items/${item.id}');
 
     final snapshot = await cartRef.get();
     if (snapshot.exists) {
       // Item exists, update quantity
-      int currentQuantity = (snapshot.value as Map<dynamic, dynamic>)['quantity'];
+      int currentQuantity =
+          (snapshot.value as Map<dynamic, dynamic>)['quantity'];
       cartRef.update({
-        'quantity': currentQuantity + quantity,
-        'totalPrice': (item.price * (currentQuantity + quantity)).toDouble(),
+        'quantity': quantity,
+        'totalPrice': (item.price * quantity).toDouble(),
       });
     } else {
       // New item, add to cart
       cartRef.set({
-        'id' : item.id,
+        'id': item.id,
         'name': item.name,
         'description': item.description,
         'price': item.price,
@@ -280,29 +284,30 @@ class FirebaseService {
     }
   }
 
-  Future<List<Cart>> getCartItems() async {
-    try {
+  Stream<List<Cart>> getCartItems() {
+    var userId = FirebaseAuth.instance.currentUser!.uid;
 
-      var userId = _auth.currentUser!.uid;
 
-      DataSnapshot snapshot = await _database.ref().child('userCarts').child(userId).child('items').get();
+    Stream<DatabaseEvent> stream =
+        _database.ref().child('userCarts').child(userId).child('items').onValue;
 
-      if (snapshot.value != null) {
-        Map<dynamic, dynamic> cartMap = Map<dynamic, dynamic>.from(snapshot.value as Map<dynamic, dynamic> );
-        List<Cart> cartItems = cartMap.values.map((item) => Cart.fromJson(item)).toList();
+    return stream.map((DatabaseEvent event) {
+      if (event.snapshot.value != null) {
+        // Convert the data snapshot to a map and then to a List<Cart>
+        Map<dynamic, dynamic> cartMap = Map<dynamic, dynamic>.from(
+            event.snapshot.value as Map<dynamic, dynamic>);
+        List<Cart> cartItems = cartMap.values
+            .map((item) => Cart.fromJson(Map<dynamic, dynamic>.from(item)))
+            .toList();
         return cartItems;
       } else {
-        return []; // Return empty list if no data found for the user
+        return <Cart>[]; // Return an empty list if there's no data
       }
-    } catch (e) {
-      print('Error retrieving cart items: $e');
-      return []; // Return empty list in case of error
-    }
+    });
   }
 
   Future<UserData?> getUserData() async {
     try {
-
       var userId = _auth.currentUser!.uid;
 
       DataSnapshot snapshot = await _database.ref("users").child(userId).get();
@@ -317,6 +322,17 @@ class FirebaseService {
     }
   }
 
+  Future<void> updateCartItem(Cart cartItem) async {
+    try {
+      var userId = _auth.currentUser!.uid;
+
+      await _database.ref().child('userCarts').child(userId).child('items').child(cartItem.id).update(cartItem.toJson());
+      print('Cart item updated successfully');
+    } catch (e) {
+      print('Error updating cart item: $e');
+    }
+  }
+
   Future<void> updateUserData(UserData userData) async {
     try {
       await _database.ref("users").child(userData.id).update({
@@ -328,6 +344,121 @@ class FirebaseService {
       print('Error updating user data: $e');
       throw e;
     }
+  }
+
+  Future<void> removeCartItem( String cartItemId) async {
+    try {
+
+      var userId = _auth.currentUser!.uid;
+
+      await _database.ref()
+          .child('userCarts')
+          .child(userId)
+          .child('items')
+          .child(cartItemId)
+          .remove();
+      print('Cart item removed successfully');
+    } catch (e) {
+      print('Error removing cart item: $e');
+    }
+  }
+
+  Future<List<Cart>> getCartItemOnce() async {
+    List<Cart> cartItems = [];
+    try {
+
+      var userId = _auth.currentUser!.uid;
+
+      DatabaseReference ref = _database.ref('userCarts/$userId/items');
+      DataSnapshot snapshot = await ref.get();
+
+      if (snapshot.exists) {
+        Map<dynamic, dynamic> items = snapshot.value as Map<dynamic, dynamic>;
+        items.forEach((key, value) {
+          Cart cartItem = Cart(
+            id: value['id'],
+            name: value['name'],
+            description: value['description'],
+            imageUrl: value['imageUrl'],
+            price: double.parse(value['price'].toString()),
+            quantity: int.parse(value['quantity'].toString()),
+            totalPrice: double.parse(value['totalPrice'].toString()),
+            unit: value['unit'], createdAt: value['createdAt'],
+          );
+          cartItems.add(cartItem);
+        });
+      }
+    } catch (e) {
+      print("An error occurred while fetching cart items: ${e.toString()}");
+      // Optionally, handle the error in a way that's appropriate for your app
+    }
+    return cartItems;
+  }
+
+  Stream<List<Address>> getAddressStream() {
+
+    var userId = _auth.currentUser!.uid;
+
+    Stream<DatabaseEvent> stream =
+        _database.ref().child('userAddresses').child(userId).onValue;
+
+    return stream.map((DatabaseEvent event) {
+      if (event.snapshot.value != null) {
+        // Convert the data snapshot to a map and then to a List<Cart>
+        Map<dynamic, dynamic> addressMap = Map<dynamic, dynamic>.from(
+            event.snapshot.value as Map<dynamic, dynamic>);
+        List<Address> addressItems = addressMap.values
+            .map((item) => Address.fromJson(Map<dynamic, dynamic>.from(item)))
+            .toList();
+        return addressItems;
+      } else {
+        return <Address>[]; // Return an empty list if there's no data
+      }
+    });
+  }
+
+  Future<void> addAddress(Address address) async {
+    var userId = _auth.currentUser!.uid;
+    var id = _database.ref('userAddresses/$userId').push().key;
+    address.id = id.toString();
+    //DatabaseReference addressRef = _database.ref('userAddresses/$userId').push();
+    // Set the address data
+    await _database.ref('userAddresses/$userId').child(address.id).set(address.toJson());
+  }
+
+  Future<void> placeOrder(Order order) async {
+    
+    String? id = _database.ref().child('orders').push().key;
+    order.orderId = id;
+    if(id!=null){
+      await _database.ref().child('orders').child(id).set(order.toJson());
+      await _database.ref().child('userCarts').child(order.userId!).remove();
+    }
+    
+  }
+
+  Future<void> logOut() async {
+    await _auth.signOut();
+  }
+
+  Stream<List<Order>> get orderStream {
+
+    var userId = _auth.currentUser!.uid;
+
+    return _database
+        .ref()
+        .child('orders')
+        .orderByChild('userId')
+        .equalTo(userId)
+        .onValue
+        .map((event) {
+      dynamic ordersMap = event.snapshot.value ?? {};
+      List<Order> orders = [];
+      ordersMap.forEach((key, value) {
+        orders.add(Order.fromJson(Map<String, dynamic>.from(value)));
+      });
+      return orders;
+    });
   }
 
 }

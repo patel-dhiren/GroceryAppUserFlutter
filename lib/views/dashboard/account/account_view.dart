@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:grocery_app_user/constants/constants.dart';
 import 'package:grocery_app_user/firebase/firebase_service.dart';
 import 'package:grocery_app_user/gen/assets.gen.dart';
- // Import your DatabaseService class
+// Import your DatabaseService class
 
 class AccountView extends StatefulWidget {
   const AccountView({super.key});
@@ -12,7 +12,7 @@ class AccountView extends StatefulWidget {
 }
 
 class _AccountViewState extends State<AccountView> {
- // Initialize DatabaseService
+  // Initialize DatabaseService
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +22,9 @@ class _AccountViewState extends State<AccountView> {
         title: Text('Profile Account'),
       ),
       body: FutureBuilder(
-        future: FirebaseService().getUserData(), // Replace 'your_user_id' with the actual user ID
-        builder: (context,  snapshot) {
+        future: FirebaseService().getUserData(),
+        // Replace 'your_user_id' with the actual user ID
+        builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError || snapshot.data == null) {
@@ -54,10 +55,11 @@ class _AccountViewState extends State<AccountView> {
                   subtitle: Text('Contact : ${userData!.contact}'),
                   trailing: IconButton(
                     onPressed: () async {
-                      bool? status = await Navigator.pushNamed(context, AppConstant.profileUpdateView, arguments: userData) as bool;
-                      if(status!=null && status){
-                        setState(() {
-                        });
+                      bool? status = await Navigator.pushNamed(
+                          context, AppConstant.profileUpdateView,
+                          arguments: userData) as bool;
+                      if (status != null && status) {
+                        setState(() {});
                       }
                     },
                     icon: Icon(Icons.edit),
@@ -81,6 +83,9 @@ class _AccountViewState extends State<AccountView> {
                             fontSize: 18,
                           ),
                         ),
+                        onTap: () {
+                          Navigator.pushNamed(context, AppConstant.myCartView);
+                        },
                         trailing: Icon(Icons.navigate_next),
                       ),
                       ListTile(
@@ -91,6 +96,9 @@ class _AccountViewState extends State<AccountView> {
                             fontSize: 18,
                           ),
                         ),
+                        onTap: () {
+                          Navigator.pushNamed(context, AppConstant.orderListView);
+                        },
                         trailing: Icon(Icons.navigate_next),
                       ),
                       ListTile(
@@ -102,6 +110,11 @@ class _AccountViewState extends State<AccountView> {
                           ),
                         ),
                         trailing: Icon(Icons.navigate_next),
+                        onTap: () {
+                          FirebaseService().logOut().then((value) =>
+                              Navigator.pushNamedAndRemoveUntil(context,
+                                  AppConstant.loginView, (route) => false));
+                        },
                       )
                     ],
                   ),

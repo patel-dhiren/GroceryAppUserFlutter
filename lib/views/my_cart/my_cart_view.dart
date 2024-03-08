@@ -5,12 +5,12 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../../model/cart.dart';
 
-class CartView extends StatefulWidget {
+class MyCartView extends StatefulWidget {
   @override
-  State<CartView> createState() => _CartViewState();
+  State<MyCartView> createState() => _MyCartViewState();
 }
 
-class _CartViewState extends State<CartView> {
+class _MyCartViewState extends State<MyCartView> {
   void _updateQuantity(Cart cartItem, {required bool isIncrement}) async {
     if (isIncrement) {
       cartItem.quantity += 1;
@@ -28,6 +28,9 @@ class _CartViewState extends State<CartView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text('My Cart Items'),
+      ),
       backgroundColor: Colors.grey.shade100,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
