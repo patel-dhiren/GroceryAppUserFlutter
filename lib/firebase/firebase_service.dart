@@ -190,6 +190,16 @@ class FirebaseService {
     }
   }
 
+  void removeFavorite(String productId) {
+    if (_auth.currentUser != null) {
+       _database
+          .ref('userFavorites')
+          .child(_auth.currentUser!.uid)
+          .child(productId)
+          .remove();
+    }
+  }
+
   Future<bool> getFavorite(String productId) async {
     if (_auth.currentUser != null) {
       final snapshot = await _database
@@ -237,20 +247,18 @@ class FirebaseService {
     }
   }
 
-  Future<List<Map<dynamic, dynamic>>> fetchUserFavoriteItems() async {
+  Stream<List<Map<dynamic, dynamic>>> fetchUserFavoriteItemsStream() {
     var userId = _auth.currentUser!.uid;
 
-    List<Map<dynamic, dynamic>> favoriteItemsDetails = [];
-    List<String> favoriteItemIds = await fetchUserFavoriteItemIds(userId);
-
-    for (String itemId in favoriteItemIds) {
-      Map<dynamic, dynamic> itemDetails = await fetchItemDetails(itemId);
-      if (itemDetails.isNotEmpty) {
-        favoriteItemsDetails.add(itemDetails);
-      }
-    }
-
-    return favoriteItemsDetails;
+    // Stream.fromFuture is used here if fetchUserFavoriteItemIds returns a Future.
+    // If it's already a Stream, you can directly use it without Stream.fromFuture.
+    return Stream.fromFuture(fetchUserFavoriteItemIds(userId)).asyncMap((favoriteItemIds) async {
+      // Using Future.wait to concurrently fetch all item details
+      var futures = favoriteItemIds.map((itemId) => fetchItemDetails(itemId));
+      List<Map<dynamic, dynamic>> favoriteItemsDetails = await Future.wait(futures);
+      // Filtering out empty or null itemDetails if necessary
+      return favoriteItemsDetails.where((itemDetails) => itemDetails.isNotEmpty).toList();
+    });
   }
 
   Future<void> addToCart(Item item, int quantity) async {

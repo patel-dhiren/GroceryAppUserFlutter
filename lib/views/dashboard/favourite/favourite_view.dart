@@ -22,8 +22,8 @@ class _FavouriteViewState extends State<FavouriteView> {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(16),
-          child: FutureBuilder(
-            future: FirebaseService().fetchUserFavoriteItems(),
+          child: StreamBuilder(
+            stream: FirebaseService().fetchUserFavoriteItemsStream(),
             builder: (context, snapshot) {
 
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -165,6 +165,25 @@ class _FavouriteViewState extends State<FavouriteView> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
+                                    ),
+                                    ValueListenableBuilder<bool>(
+                                      valueListenable: FirebaseService().getFavoriteNotifier(item.id!),
+                                      builder: (context, isFavorite, _) {
+
+                                        return InkWell(
+                                          onTap: () {
+                                            FirebaseService().toggleFavorite(item.id!);
+
+                                            //FirebaseService().removeFavorite(item.id!);
+                                          },
+                                          child: Icon(
+                                            isFavorite
+                                                ? Icons.favorite
+                                                : Icons.favorite_border,
+                                            color: Colors.red,
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 )
